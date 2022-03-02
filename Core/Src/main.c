@@ -59,59 +59,121 @@ static void MX_ADC1_Init(void);
 /* USER CODE BEGIN 0 */
 
 /* USER CODE END 0 */
+uint32_t GBA_Send32_Tries(uint32_t data, uint32_t tries)
+{
+    uint32_t waited = 0;
+    uint32_t out = 0;
+    // Wait for SI LO
+    while (tries != 0x1234ABCD && HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_8) != GPIO_PIN_SET)
+    {
+      waited++;
+      if (tries && waited > tries)
+        return 0xFFFFFFFF;
+      //HAL_Delay(1);
+      DelayLil();
+    }
+
+    //HAL_Delay(1);
+
+    DelayLil();
+    DelayLil();
+    DelayLil();
+    DelayLil();
+
+
+    for (int i = 0; i < 32; i++)
+    {
+      //HAL_Delay(1);
+      DelayLil();
+
+      // CLK HI -> LO
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
+
+      // Shift out our data to SO
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, (data & 0x80000000 ? GPIO_PIN_SET : GPIO_PIN_RESET));
+      data = data << 1;
+
+      DelayLil();
+      //HAL_Delay(1);
+
+      // Read in data from SI
+      out = out << 1;
+      out |= (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_8) == GPIO_PIN_SET ? 1 : 0);
+
+      // GBA reads our data on this edge, LO -> HI
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
+    }
+
+    // Set SO HI
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_SET);
+
+    return out;
+}
+
 uint32_t GBA_Send32(uint32_t data)
 {
-	uint32_t waited = 0;
-	uint32_t out = 0;
-	// Wait for SI LO
-	//while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_8) != GPIO_PIN_SET)
-	{
-		waited++;
-		//if (waited > 100)
-		//	return 0xFFFFFFFF;
-		//HAL_Delay(1);
-	}
+  return GBA_Send32_Tries(data, 100);
+}
 
-	//HAL_Delay(1);
+uint32_t GBA_Send8_Tries(uint8_t data, uint32_t tries)
+{
+    uint32_t waited = 0;
+    uint32_t out = 0;
+    // Wait for SI LO
+    while (tries != 0x1234ABCD && HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_8) != GPIO_PIN_SET)
+    {
+      waited++;
+      if (tries && waited > tries)
+        return 0xFFFFFFFF;
+      //HAL_Delay(1);
+      DelayLil();
+    }
 
-	DelayLil();
-	DelayLil();
-	DelayLil();
-	DelayLil();
+    //HAL_Delay(1);
+
+    DelayLil();
+    DelayLil();
+    DelayLil();
+    DelayLil();
 
 
-	for (int i = 0; i < 32; i++)
-	{
-		//HAL_Delay(1);
-		DelayLil();
+    for (int i = 0; i < 8; i++)
+    {
+      //HAL_Delay(1);
+      DelayLil();
 
-		// CLK HI -> LO
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
+      // CLK HI -> LO
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
 
-		// Shift out our data to SO
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, (data & 0x80000000 ? GPIO_PIN_SET : GPIO_PIN_RESET));
-		data = data << 1;
+      // Shift out our data to SO
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, (data & 0x80000000 ? GPIO_PIN_SET : GPIO_PIN_RESET));
+      data = data << 1;
 
-		DelayLil();
-		//HAL_Delay(1);
+      DelayLil();
+      //HAL_Delay(1);
 
-		// Read in data from SI
-		out = out << 1;
-		out |= (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_8) == GPIO_PIN_SET ? 1 : 0);
+      // Read in data from SI
+      out = out << 1;
+      out |= (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_8) == GPIO_PIN_SET ? 1 : 0);
 
-		// GBA reads our data on this edge, LO -> HI
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
-	}
+      // GBA reads our data on this edge, LO -> HI
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
+    }
 
-	// Set SO HI
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_SET);
+    // Set SO HI
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_SET);
 
-	return out;
+    return out;
+}
+
+uint32_t GBA_Send8(uint8_t data)
+{
+  return GBA_Send8_Tries(data, 100);
 }
 
 void DelayLil()
 {
-	for (int i = 0; i < 10; i++)
+	for (int i = 0; i < 1; i++)
 	{
 		__asm__("nop");
 	}

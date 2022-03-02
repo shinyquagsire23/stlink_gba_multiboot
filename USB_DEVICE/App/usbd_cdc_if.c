@@ -256,6 +256,9 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 }
 
 extern uint32_t GBA_Send32(uint32_t data);
+extern uint32_t GBA_Send32_Tries(uint32_t data, uint32_t tries);
+extern uint32_t GBA_Send8(uint8_t data);
+extern uint32_t GBA_Send8_Tries(uint8_t data, uint32_t tries);
 extern void LED(int s);
 
 /**
@@ -294,7 +297,7 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   else if (pkt_buf[0] == 1)
   {
     uint32_t tosend = *(uint32_t*)&pkt_buf[4];
-    GBA_Send32(tosend);
+    GBA_Send32_Tries(tosend, 0);
   }
   else if (pkt_buf[0] == 2)
   {
@@ -303,6 +306,38 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
     LED(!!tosend);
   }
   else if (pkt_buf[0] == 3)
+  {
+    uint32_t tosend = *(uint32_t*)&pkt_buf[4];
+
+    uint32_t resp[2];
+    resp[0] = 0;
+    resp[1] = GBA_Send32_Tries(tosend, 0x1234ABCD);
+    CDC_Transmit_FS(resp, sizeof(resp));
+  }
+  else if (pkt_buf[0] == 4)
+  {
+    uint32_t tosend = *(uint32_t*)&pkt_buf[4];
+
+    uint32_t resp[2];
+    resp[0] = 0;
+    resp[1] = GBA_Send8(tosend & 0xFF);
+    CDC_Transmit_FS(resp, sizeof(resp));
+  }
+  else if (pkt_buf[0] == 5)
+  {
+    uint32_t tosend = *(uint32_t*)&pkt_buf[4];
+    GBA_Send8_Tries(tosend & 0xFF, 0);
+  }
+  else if (pkt_buf[0] == 6)
+  {
+    uint32_t tosend = *(uint32_t*)&pkt_buf[4];
+
+    uint32_t resp[2];
+    resp[0] = 0;
+    resp[1] = GBA_Send8_Tries(tosend & 0xFF, 0x1234ABCD);
+    CDC_Transmit_FS(resp, sizeof(resp));
+  }
+  else if (pkt_buf[0] == 1234)
   {
     const char* test_send = "asdf asdf 1\r\n";
     CDC_Transmit_FS(test_send, strlen(test_send));
